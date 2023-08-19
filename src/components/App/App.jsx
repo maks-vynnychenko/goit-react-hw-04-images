@@ -1,107 +1,79 @@
-import React, { Component } from 'react';
-import * as Api from 'services/api';
+import React, { useState, useEffect } from 'react';
+
+import { fetchImg } from 'services/api';
+
 import Searchbar from '../Searchbar/Searchbar';
 import { ImageGallery } from '../ImageGallery/ImageGallery';
 import { Loader } from '../Loader/Loader';
 import { Button } from '../Button/Button';
 import Modal from '../Modal/Modal';
+
 import appStyle from './App.module.css';
-class App extends Component {
-  state = {
-    searchValue: '',
-    images: [],
-    isLoading: false,
-    loadMore: false,
-    page: 1,
-    per_page: 12,
-    modal: false,
-    largeImgURL: null,
-  };
 
-  componentDidUpdate(prevProps, prevState) {
-    if (
-      prevState.searchValue !== this.state.searchValue ||
-      prevState.page !== this.state.page
-    ) {
-      this.setState({
-        isLoading: true,
-      });
-      this.fetchImages(
-        this.state.searchValue,
-        this.state.page,
-        this.state.per_page
-      );
-    }
-  }
+const App = () => {
+  const [searchValue, setSearchValue] = useState('');
+  const [images, setImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadMore, setLoadMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [per_page] = useState(12);
+  const [modal, setModal] = useState(false);
+  const [largeImgURL, setLargeImageUrl] = useState(null);
 
-  fetchImages = (searchValue, page, per_page) => {
-    Api.fetchImg(searchValue, page, per_page)
-      .then(({ hits, totalHits }) => {
-        if (hits.length === 0) {
-          this.setState({
-            isLoading: false,
-            loadMore: false,
-          });
-
-          alert('No image find with your request');
-          return;
-        }
-
-        this.setState(prevState => ({
-          images: [...prevState.images, ...hits],
-          loadMore: page < Math.ceil(totalHits / per_page),
-        }));
-        this.setState({
-          isLoading: false,
-        });
-      })
-      .catch(error => {
-        console.log(error);
-      });
-  };
-
-  submitForm = searchValue => {
-    if (searchValue === this.state.searchValue) {
+  useEffect(() => {
+    if (searchValue === '') {
       return;
     }
-    this.setState({
-      searchValue: searchValue,
-      page: 1,
-      images: [],
-    });
+    const fetchImage = async (searchValue, page, per_page) => {
+      await fetchImg(searchValue, page, per_page)
+        .then(({ hits, totalHits }) => {
+          if (hits.length === 0) {
+            setIsLoading(false);
+            setLoadMore(false);
+            alert('No image find with your request');
+            return;
+          }
+          setImages(prevImages => [...prevImages, ...hits]);
+          setLoadMore(page < Math.ceil(totalHits / per_page));
+          setIsLoading(false);
+        })
+        .catch(error => {
+          console.log(error);
+        });
+    };
+    setIsLoading(true);
+    fetchImage(searchValue, page, per_page);
+  }, [searchValue, page, per_page]);
+
+  const submitForm = searchQuery => {
+    if (searchQuery === searchValue) {
+      return;
+    }
+    setSearchValue(searchQuery);
+    setPage(1);
+    setImages([]);
   };
 
-  onLoadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const onLoadMore = () => {
+    setPage(prevPage => prevPage + 1);
   };
 
-  toggleModal = image => {
-    this.setState(prevState => ({
-      modal: !prevState.modal,
-      largeImgURL: image,
-    }));
+  const toggleModal = image => {
+    setModal(prevModal => !prevModal);
+    setLargeImageUrl(image);
   };
 
-  render() {
-    return (
-      <div className={appStyle.App}>
-        <Searchbar onSubmit={this.submitForm} />
-        {this.state.images.length > 0 && (
-          <ImageGallery images={this.state.images} onClick={this.toggleModal} />
-        )}
-        {this.state.isLoading && <Loader />}
-        {this.state.loadMore && <Button onClick={this.onLoadMore} />}
-        {this.state.modal && (
-          <Modal
-            largeImage={this.state.largeImgURL}
-            onClose={this.toggleModal}
-          />
-        )}
-      </div>
-    );
-  }
-}
+  return (
+    <div className={appStyle.App}>
+      <Searchbar onSubmit={submitForm} />
+      {images.length > 0 && (
+        <ImageGallery images={images} onClick={toggleModal} />
+      )}
+      {isLoading && <Loader />}
+      {loadMore && <Button onClick={onLoadMore} />}
+      {modal && <Modal largeImage={largeImgURL} onClose={toggleModal} />}
+    </div>
+  );
+};
 
 export default App;

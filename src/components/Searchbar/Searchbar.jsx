@@ -1,51 +1,48 @@
-import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 
-import searchbarStyle from './Searchbar.module.css'
+import React, { useState } from 'react';
 
-class Searchbar extends Component {
-  state = {
-    searchValue: '',
+import searchbarStyle from './Searchbar.module.css';
+
+const Searchbar = ({ onSubmit }) => {
+  const [searchValue, setSearchValue] = useState('');
+
+  const hendleChange = evt => {
+    setSearchValue(evt.target.value);
   };
 
-  hendleChange = evt => {
-    this.setState({
-      searchValue: evt.target.value,
-    });
-
-  };
-
-  formSubmit = evt => {
+  const formSubmit = evt => {
     evt.preventDefault();
-this.props.onSubmit(this.state.searchValue)
-this.reset()
+    onSubmit(searchValue);
+    reset();
   };
-  reset = () => {
-    this.setState({
-      searchValue: '',
-    });
+  const reset = () => {
+    setSearchValue('');
   };
 
-  render() {
-    return (
-      <header className={searchbarStyle.Searchbar}>
-        <form className={searchbarStyle.SearchForm} onSubmit={this.formSubmit}>
-          <button type="submit" className={searchbarStyle.SearchFormButton}>
-           Search
-          </button>
+  return (
+    <header className={searchbarStyle.Searchbar}>
+      <form className={searchbarStyle.SearchForm} onSubmit={formSubmit}>
+        <button type="submit" className={searchbarStyle.SearchFormButton}>
+          Search
+        </button>
 
-          <input
-            className={searchbarStyle.SearchFormInput}
-            type="text"
-            autoComplete="off"
-            autoFocus
-            placeholder="Search images and photos"
-            value={this.state.searchValue}
-            onChange={this.hendleChange}
-          />
-        </form>
-      </header>
-    );
-  }
-}
+        <input
+          className={searchbarStyle.SearchFormInput}
+          type="text"
+          autoComplete="off"
+          autoFocus
+          placeholder="Search images and photos"
+          value={searchValue}
+          onChange={hendleChange}
+        />
+      </form>
+    </header>
+  );
+};
 
 export default Searchbar;
+
+Searchbar.propTypes = {
+  onSubmit: PropTypes.func.isRequired,
+};
